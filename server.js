@@ -2,7 +2,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const http = require('node:http');
 const path = require('node:path');
-const { parseNumberList, sumDecimals } = require('./lib/decimal');
+const { handleSessionMessage } = require('./lib/bot-session');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -10,6 +10,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 const MAX_BODY_BYTES = 64 * 1024;
 const processedMessages = new Map();
+const senderSessions = new Map();
 
 function emptySettings() {
   return {
@@ -230,27 +231,26 @@ async function handleWebhook(request, response, token) {
   pruneProcessedMessages();
   if (processedMessages.has(messageId)) return jsonResponse(response, 200, { ok: true, duplicate: true });
 
-  let values;
-  try {
-    values = parseNumberList(extractText(data.message));
-    if (values.length === 0) throw new Error('لا توجد أرقام.');
-  } catch {
-    return jsonResponse(response, 200, { ok: true, ignored: true });
+  processedMessages.set(messageId, Date.now());
+  const result = handleSessionMessage(senderSessions, sender, extractText(data.message));
+  if (!result.reply) {
+    return jsonResponse(response, 200, {
+      ok: true,
+      action: result.action,
+      stored: result.stored || 0
+    });
   }
 
-  const total = sumDecimals(values);
-  processedMessages.set(messageId, Date.now());
   try {
     await evolutionRequest(current, `/message/sendText/${encodeURIComponent(current.instanceName)}`, {
       method: 'POST',
       body: JSON.stringify({
         number: sender,
-        text: `مجموع الأعداد هو: ${total}`
+        text: result.reply
       })
     });
-    return jsonResponse(response, 200, { ok: true, total });
+    return jsonResponse(response, 200, { ok: true, action: result.action, total: result.total });
   } catch (error) {
-    processedMessages.delete(messageId);
     console.error('WhatsApp reply failed:', error.message);
     return jsonResponse(response, 502, { ok: false, error: 'تعذر إرسال النتيجة عبر واتساب.' });
   }

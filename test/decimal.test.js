@@ -19,6 +19,7 @@ test('normalizes zero and trailing fractional zeros', () => {
 
 test('parses a whitespace or comma separated WhatsApp message', () => {
   assert.deepEqual(parseNumberList('١٢٫٥, 3.25\n-1'), ['12.5', '3.25', '-1']);
+  assert.deepEqual(parseNumberList('١٢٫٥، 3.25\n-1'), ['12.5', '3.25', '-1']);
 });
 
 test('rejects non-numeric and excessive input', () => {
