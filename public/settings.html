@@ -42,10 +42,11 @@
               <span>اسم الـ Instance</span>
               <input id="instance-name" name="instanceName" type="text" placeholder="my-whatsapp" autocomplete="off" required>
             </label>
-            <label class="field" for="api-key">
-              <span>مفتاح API <small id="api-key-hint">لا يُعرض بعد الحفظ</small></span>
-              <input id="api-key" name="apiKey" type="password" placeholder="أدخل المفتاح أو اتركه كما هو" autocomplete="new-password">
-            </label>
+            <div class="field">
+              <span>مفتاح Evolution API <small>من متغيرات الخادم</small></span>
+              <div class="env-value" id="api-key-status">يُضبط من EVOLUTION_API_KEY أو AUTHENTICATION_API_KEY</div>
+              <small>المفتاح لا يُرسل من المتصفح ولا يُحفظ في ملف الإعدادات.</small>
+            </div>
             <label class="field field-wide" for="public-url">
               <span>الرابط العام لهذا الموقع</span>
               <input id="public-url" name="publicUrl" type="url" placeholder="يُكتشف تلقائيًا على Render" autocomplete="url">
@@ -55,9 +56,9 @@
 
           <div class="form-section-title numbers-title"><span class="step-number">02</span><h2>الأرقام المسموح لها</h2></div>
           <label class="field" for="allowed-numbers">
-            <span>رقم دولي واحد في كل سطر</span>
+            <span>الأرقام المصرح بها <small id="allowed-numbers-source">من متغير الخادم</small></span>
             <textarea id="allowed-numbers" name="allowedNumbers" rows="4" placeholder="9665XXXXXXXX&#10;2010XXXXXXXX" spellcheck="false"></textarea>
-            <small>اكتب رمز الدولة دون الحاجة إلى علامة +. الأرقام غير المدرجة لن تتلقى ردًا.</small>
+            <small id="allowed-numbers-hint">اضبط ALLOWED_NUMBERS في Render، مفصولة بفواصل أو أسطر. اكتب الأرقام بصيغة دولية مع رمز الدولة.</small>
           </label>
 
           <label class="field admin-token-field" for="settings-token">

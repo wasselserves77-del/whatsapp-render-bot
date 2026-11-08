@@ -28,8 +28,19 @@ async function loadSettings() {
     document.querySelector('#instance-name').value = settings.instanceName || '';
     document.querySelector('#allowed-numbers').value = (settings.allowedNumbers || []).join('\n');
     document.querySelector('#public-url').value = settings.publicUrl || '';
+    document.querySelector('#api-key-status').textContent = settings.apiKeyConfigured
+      ? 'مفتاح API جاهز من بيئة الخادم'
+      : 'غير مضبوط؛ أضف EVOLUTION_API_KEY إلى بيئة خدمة البوت';
+    const allowedNumbersInput = document.querySelector('#allowed-numbers');
+    const allowedNumbersFromEnv = settings.allowedNumbersFromEnv;
+    allowedNumbersInput.disabled = allowedNumbersFromEnv || settings.settingsTokenRequired;
+    document.querySelector('#allowed-numbers-source').textContent = allowedNumbersFromEnv
+      ? 'متغير ALLOWED_NUMBERS'
+      : 'أضف المتغير في Render';
+    document.querySelector('#allowed-numbers-hint').textContent = allowedNumbersFromEnv
+      ? 'هذه الأرقام للعرض فقط وتدار من ALLOWED_NUMBERS في Render.'
+      : 'اضبط ALLOWED_NUMBERS في Render، مفصولة بفواصل أو أسطر. اكتب الأرقام بصيغة دولية مع رمز الدولة.';
     if (settings.apiKeyConfigured) {
-      document.querySelector('#api-key-hint').textContent = 'مفتاح محفوظ؛ اتركه فارغًا للإبقاء عليه';
       setConnection(false, false, 'البيانات محفوظة', 'اختبر الاتصال أو أعد حفظ webhook.');
       document.querySelector('#api-status').textContent = 'إعداد محفوظ';
     }
@@ -43,7 +54,6 @@ function getSettingsPayload() {
   return {
     baseUrl: document.querySelector('#base-url').value.trim(),
     instanceName: document.querySelector('#instance-name').value.trim(),
-    apiKey: document.querySelector('#api-key').value,
     publicUrl: document.querySelector('#public-url').value.trim(),
     allowedNumbers: document.querySelector('#allowed-numbers').value.split(/[\s,;]+/).filter(Boolean)
   };
@@ -66,8 +76,6 @@ form.addEventListener('submit', async (event) => {
       if (response.status === 401) settingsToken = '';
       throw new Error(result.error || 'تعذر حفظ الإعدادات.');
     }
-    document.querySelector('#api-key').value = '';
-    document.querySelector('#api-key-hint').textContent = 'مفتاح محفوظ؛ اتركه فارغًا للإبقاء عليه';
     setConnection(true, true, 'متصل وجاهز', 'تم حفظ إعدادات Evolution API وتفعيل webhook للرسائل.');
     message.textContent = 'تم الحفظ وربط webhook بنجاح.';
     message.className = 'settings-message is-success';

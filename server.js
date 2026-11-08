@@ -3,6 +3,7 @@ const fs = require('node:fs/promises');
 const http = require('node:http');
 const path = require('node:path');
 const { handleSessionMessage } = require('./lib/bot-session');
+const { getEvolutionApiKey, hasAllowedNumbersEnv, parseAllowedNumbers, resolveAllowedNumbers } = require('./lib/environment');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -16,7 +17,6 @@ function emptySettings() {
   return {
     baseUrl: '',
     instanceName: '',
-    apiKey: '',
     allowedNumbers: [],
     publicUrl: '',
     webhookToken: crypto.randomBytes(24).toString('hex')
@@ -26,9 +26,29 @@ function emptySettings() {
 async function loadSettings() {
   try {
     const stored = JSON.parse(await fs.readFile(SETTINGS_FILE, 'utf8'));
-    return { ...emptySettings(), ...stored };
+    const persisted = { ...stored };
+    const hasLegacySecrets = Object.prototype.hasOwnProperty.call(persisted, 'apiKey');
+    const hasEnvironmentAllowlist = hasAllowedNumbersEnv();
+    delete persisted.apiKey;
+    if (hasEnvironmentAllowlist) delete persisted.allowedNumbers;
+
+    if (hasLegacySecrets || (hasEnvironmentAllowlist && Object.prototype.hasOwnProperty.call(stored, 'allowedNumbers'))) {
+      try {
+        await fs.writeFile(SETTINGS_FILE, `${JSON.stringify(persisted, null, 2)}\n`, { mode: 0o600 });
+      } catch (error) {
+        console.error('Could not sanitize persisted settings:', error.message);
+      }
+    }
+
+    return {
+      ...emptySettings(),
+      ...persisted,
+      allowedNumbers: resolveAllowedNumbers(persisted)
+    };
   } catch {
-    return emptySettings();
+    const initial = emptySettings();
+    initial.allowedNumbers = resolveAllowedNumbers(initial);
+    return initial;
   }
 }
 
@@ -39,10 +59,18 @@ async function getSettings() {
 }
 
 async function saveSettings(nextSettings) {
-  settingsPromise = Promise.resolve(nextSettings);
+  const persisted = { ...nextSettings };
+  delete persisted.apiKey;
+  if (hasAllowedNumbersEnv()) delete persisted.allowedNumbers;
+
+  const runtimeSettings = {
+    ...nextSettings,
+    allowedNumbers: resolveAllowedNumbers(persisted)
+  };
+  settingsPromise = Promise.resolve(runtimeSettings);
   await fs.mkdir(DATA_DIR, { recursive: true });
   const temporaryFile = `${SETTINGS_FILE}.tmp`;
-  await fs.writeFile(temporaryFile, `${JSON.stringify(nextSettings, null, 2)}\n`, { mode: 0o600 });
+  await fs.writeFile(temporaryFile, `${JSON.stringify(persisted, null, 2)}\n`, { mode: 0o600 });
   await fs.rename(temporaryFile, SETTINGS_FILE);
 }
 
@@ -102,10 +130,15 @@ function validateSettings(input, current) {
     throw new Error('اسم الـ Instance يقبل الأحرف والأرقام والنقطة والشرطة فقط.');
   }
 
-  const apiKey = String(input.apiKey || '').trim() || current.apiKey;
-  if (!apiKey) throw new Error('أدخل مفتاح Evolution API.');
+  const apiKey = getEvolutionApiKey();
+  if (!apiKey) throw new Error('اضبط EVOLUTION_API_KEY في متغيرات بيئة خدمة البوت أولًا.');
 
-  const rawNumbers = Array.isArray(input.allowedNumbers) ? input.allowedNumbers : [];
+  if (process.env.NODE_ENV === 'production' && !hasAllowedNumbersEnv()) {
+    throw new Error('اضبط ALLOWED_NUMBERS في متغيرات بيئة خدمة البوت أولًا.');
+  }
+  const rawNumbers = hasAllowedNumbersEnv()
+    ? parseAllowedNumbers(process.env.ALLOWED_NUMBERS)
+    : Array.isArray(input.allowedNumbers) ? input.allowedNumbers : [];
   const allowedNumbers = [...new Set(rawNumbers.map(normalizePhone).filter(Boolean))];
   if (allowedNumbers.some((number) => number.length < 7 || number.length > 15)) {
     throw new Error('استخدم أرقام واتساب بصيغة دولية، من 7 إلى 15 رقمًا.');
@@ -128,7 +161,6 @@ function validateSettings(input, current) {
     ...current,
     baseUrl: baseUrl.toString().replace(/\/+$/, ''),
     instanceName,
-    apiKey,
     allowedNumbers,
     publicUrl
   };
@@ -146,7 +178,7 @@ async function evolutionRequest(current, pathname, options = {}) {
   const response = await fetch(`${current.baseUrl}${pathname}`, {
     ...options,
     headers: {
-      apikey: current.apiKey,
+      apikey: getEvolutionApiKey(),
       'content-type': 'application/json',
       ...options.headers
     },
@@ -224,7 +256,7 @@ async function handleWebhook(request, response, token) {
   if (normalizeEvent(payload.event) !== 'messages.upsert' || messageKey.fromMe || senderJid.includes('@g.us')) {
     return jsonResponse(response, 200, { ok: true, ignored: true });
   }
-  if (!current.allowedNumbers.includes(sender) || !current.apiKey || !current.baseUrl || !messageId) {
+  if (!current.allowedNumbers.includes(sender) || !getEvolutionApiKey() || !current.baseUrl || !messageId) {
     return jsonResponse(response, 200, { ok: true, ignored: true });
   }
 
@@ -308,8 +340,9 @@ const server = http.createServer(async (request, response) => {
         baseUrl: current.baseUrl,
         instanceName: current.instanceName,
         allowedNumbers: current.allowedNumbers,
+        allowedNumbersFromEnv: hasAllowedNumbersEnv(),
         publicUrl: process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || current.publicUrl,
-        apiKeyConfigured: Boolean(current.apiKey),
+        apiKeyConfigured: Boolean(getEvolutionApiKey()),
         settingsTokenRequired: Boolean(process.env.SETTINGS_TOKEN) || process.env.NODE_ENV === 'production'
       });
     }
@@ -341,7 +374,7 @@ const server = http.createServer(async (request, response) => {
       const protection = settingsProtection(request);
       if (!protection.allowed) return jsonResponse(response, protection.status, { error: protection.error });
       const current = await getSettings();
-      if (!current.baseUrl || !current.instanceName || !current.apiKey) {
+      if (!current.baseUrl || !current.instanceName || !getEvolutionApiKey()) {
         return jsonResponse(response, 400, { error: 'احفظ بيانات الربط أولًا.' });
       }
       const result = await evolutionRequest(current, `/instance/connectionState/${encodeURIComponent(current.instanceName)}`);
@@ -352,7 +385,7 @@ const server = http.createServer(async (request, response) => {
       const protection = settingsProtection(request);
       if (!protection.allowed) return jsonResponse(response, protection.status, { error: protection.error });
       const current = await getSettings();
-      if (!current.baseUrl || !current.instanceName || !current.apiKey) {
+      if (!current.baseUrl || !current.instanceName || !getEvolutionApiKey()) {
         return jsonResponse(response, 400, { error: 'احفظ بيانات الربط أولًا.' });
       }
 

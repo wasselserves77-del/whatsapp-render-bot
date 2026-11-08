@@ -7,7 +7,8 @@ test('welcomes a sender and explains the session commands', () => {
   const result = handleSessionMessage(sessions, '966500000001', 'مرحبا');
 
   assert.equal(result.action, 'started');
-  assert.match(result.reply, /olso/);
+  assert.match(result.reply, /mezan_ ميزان/);
+  assert.match(result.reply, /الأمر oslo/);
   assert.match(result.reply, /oslo_d/);
   assert.deepEqual(sessions.get('966500000001').values, []);
 });
@@ -21,7 +22,15 @@ test('silently accumulates numbers from separate messages until olso', () => {
 
   const result = handleSessionMessage(sessions, '966500000001', 'olso');
   assert.equal(result.total, '1.55');
+  assert.match(result.reply, /mezan_ ميزان/);
   assert.match(result.reply, /oslo_d/);
+});
+
+test('accepts the requested oslo command and the earlier olso spelling', () => {
+  const sessions = new Map();
+  handleSessionMessage(sessions, '966500000001', '5');
+  assert.equal(handleSessionMessage(sessions, '966500000001', 'OSLO').total, '5');
+  assert.equal(handleSessionMessage(sessions, '966500000001', 'olso').total, '5');
 });
 
 test('supports separate rows and numbers in the initial message', () => {
