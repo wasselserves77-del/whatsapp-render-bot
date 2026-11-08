@@ -348,6 +348,34 @@ const server = http.createServer(async (request, response) => {
       return jsonResponse(response, 200, { ok: true, result });
     }
 
+    if (request.method === 'POST' && url.pathname === '/api/evolution/connect') {
+      const protection = settingsProtection(request);
+      if (!protection.allowed) return jsonResponse(response, protection.status, { error: protection.error });
+      const current = await getSettings();
+      if (!current.baseUrl || !current.instanceName || !current.apiKey) {
+        return jsonResponse(response, 400, { error: 'احفظ بيانات الربط أولًا.' });
+      }
+
+      const result = await evolutionRequest(current, `/instance/connect/${encodeURIComponent(current.instanceName)}`);
+      const qrSources = [result, result.qrcode, result.qr, result.data].filter(Boolean);
+      const base64 = qrSources.find((source) => typeof source.base64 === 'string')?.base64;
+      const code = qrSources.find((source) => typeof source.code === 'string')?.code;
+      const state = String(result.instance?.state || result.state || '').toLowerCase();
+      if (!base64 && ['open', 'connected'].includes(state)) {
+        return jsonResponse(response, 200, { ok: true, connected: true, state });
+      }
+      if (!base64 && !code) {
+        return jsonResponse(response, 502, {
+          error: 'لم يُرجع Evolution رمز QR. اختبر حالة الـInstance وتأكد أنها غير متصلة.'
+        });
+      }
+
+      const qrImage = base64
+        ? (base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`)
+        : '';
+      return jsonResponse(response, 200, { ok: true, qrImage, pairingCode: code || '' });
+    }
+
     const webhookMatch = url.pathname.match(/^\/webhook\/evolution\/([a-f0-9]+)$/);
     if (request.method === 'POST' && webhookMatch) {
       return await handleWebhook(request, response, webhookMatch[1]);

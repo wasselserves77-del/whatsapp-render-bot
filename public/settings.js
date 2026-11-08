@@ -107,4 +107,54 @@ document.querySelector('#test-connection').addEventListener('click', async (even
   }
 });
 
+document.querySelector('#request-qr').addEventListener('click', async (event) => {
+  message.textContent = '';
+  settingsToken = tokenInput.value;
+  const button = event.currentTarget;
+  const panel = document.querySelector('#qr-panel');
+  const image = document.querySelector('#qr-image');
+  const pairingCode = document.querySelector('#pairing-code');
+  button.disabled = true;
+  panel.hidden = true;
+  try {
+    const response = await fetch('/api/evolution/connect', {
+      method: 'POST',
+      headers: authHeaders()
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      if (response.status === 401) settingsToken = '';
+      throw new Error(result.error || 'تعذر طلب رمز QR.');
+    }
+
+    if (result.connected) {
+      document.querySelector('#qr-title').textContent = 'الـInstance متصل بالفعل';
+      document.querySelector('#qr-detail').textContent = 'لا يحتاج إلى QR. تحقق من حالة الاتصال أو اسم الـInstance في Evolution.';
+      image.hidden = true;
+      pairingCode.hidden = true;
+      setConnection(true, false, 'متصل بالفعل', 'يقول Evolution إن الـInstance مفتوح.');
+    } else if (result.qrImage) {
+      document.querySelector('#qr-title').textContent = 'امسح الرمز من واتساب';
+      document.querySelector('#qr-detail').textContent = 'واتساب على الهاتف ← الأجهزة المرتبطة ← ربط جهاز.';
+      image.src = result.qrImage;
+      image.hidden = false;
+      pairingCode.hidden = !result.pairingCode;
+      pairingCode.textContent = result.pairingCode || '';
+      setConnection(false, false, 'بانتظار مسح QR', 'امسح الرمز من تطبيق واتساب المرتبط بالرقم المطلوب.');
+    } else {
+      document.querySelector('#qr-title').textContent = 'رمز الربط';
+      document.querySelector('#qr-detail').textContent = 'أدخل رمز الاقتران الظاهر في واتساب إذا لم يرسل Evolution صورة QR.';
+      image.hidden = true;
+      pairingCode.hidden = !result.pairingCode;
+      pairingCode.textContent = result.pairingCode || '';
+    }
+    panel.hidden = false;
+  } catch (error) {
+    message.textContent = error.message || 'تعذر الاتصال بالخادم.';
+    message.className = 'settings-message is-error';
+  } finally {
+    button.disabled = false;
+  }
+});
+
 loadSettings();

@@ -72,7 +72,16 @@
               <span class="button-arrow" aria-hidden="true">←</span>
             </button>
             <button class="test-button" id="test-connection" type="button">اختبار الاتصال</button>
+            <button class="test-button qr-button" id="request-qr" type="button">طلب QR</button>
           </div>
+          <section class="qr-panel" id="qr-panel" aria-live="polite" hidden>
+            <div class="qr-image-shell"><img id="qr-image" alt="رمز QR لربط واتساب"></div>
+            <div class="qr-copy">
+              <strong id="qr-title">اربط واتساب</strong>
+              <p id="qr-detail">افتح واتساب على الهاتف، ثم الأجهزة المرتبطة، وامسح الرمز.</p>
+              <code id="pairing-code" hidden></code>
+            </div>
+          </section>
           <div id="settings-message" class="settings-message" role="status" aria-live="polite"></div>
         </form>
       </section>
