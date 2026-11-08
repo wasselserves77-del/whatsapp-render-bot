@@ -39,8 +39,9 @@
               <input id="base-url" name="baseUrl" type="url" placeholder="https://evolution.example.com" autocomplete="url" required>
             </label>
             <label class="field" for="instance-name">
-              <span>اسم الـ Instance</span>
-              <input id="instance-name" name="instanceName" type="text" placeholder="my-whatsapp" autocomplete="off" required>
+              <span>اسم الـ Instance <small id="instance-name-source">الافتراضي: mezan_bot</small></span>
+              <input id="instance-name" name="instanceName" type="text" placeholder="mezan_bot" autocomplete="off" required>
+              <small>يمكن تثبيته من متغير INSTANCE_NAME في بيئة خدمة البوت.</small>
             </label>
             <div class="field">
               <span>مفتاح Evolution API <small>من متغيرات الخادم</small></span>

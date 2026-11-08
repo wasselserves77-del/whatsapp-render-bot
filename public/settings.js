@@ -25,7 +25,12 @@ async function loadSettings() {
     const settings = await response.json();
     tokenRequired = settings.settingsTokenRequired;
     document.querySelector('#base-url').value = settings.baseUrl || '';
-    document.querySelector('#instance-name').value = settings.instanceName || '';
+    const instanceNameInput = document.querySelector('#instance-name');
+    instanceNameInput.value = settings.instanceName || 'mezan_bot';
+    instanceNameInput.disabled = Boolean(settings.instanceNameFromEnv);
+    document.querySelector('#instance-name-source').textContent = settings.instanceNameFromEnv
+      ? 'متغير INSTANCE_NAME'
+      : 'الافتراضي: mezan_bot';
     document.querySelector('#allowed-numbers').value = (settings.allowedNumbers || []).join('\n');
     document.querySelector('#public-url').value = settings.publicUrl || '';
     document.querySelector('#api-key-status').textContent = settings.apiKeyConfigured

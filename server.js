@@ -3,7 +3,14 @@ const fs = require('node:fs/promises');
 const http = require('node:http');
 const path = require('node:path');
 const { handleSessionMessage } = require('./lib/bot-session');
-const { getEvolutionApiKey, hasAllowedNumbersEnv, parseAllowedNumbers, resolveAllowedNumbers } = require('./lib/environment');
+const {
+  getEvolutionApiKey,
+  getInstanceName,
+  hasAllowedNumbersEnv,
+  hasInstanceNameEnv,
+  parseAllowedNumbers,
+  resolveAllowedNumbers
+} = require('./lib/environment');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -16,7 +23,7 @@ const senderSessions = new Map();
 function emptySettings() {
   return {
     baseUrl: '',
-    instanceName: '',
+    instanceName: getInstanceName(),
     allowedNumbers: [],
     publicUrl: '',
     webhookToken: crypto.randomBytes(24).toString('hex')
@@ -29,10 +36,14 @@ async function loadSettings() {
     const persisted = { ...stored };
     const hasLegacySecrets = Object.prototype.hasOwnProperty.call(persisted, 'apiKey');
     const hasEnvironmentAllowlist = hasAllowedNumbersEnv();
+    const hasEnvironmentInstance = hasInstanceNameEnv();
     delete persisted.apiKey;
     if (hasEnvironmentAllowlist) delete persisted.allowedNumbers;
+    if (hasEnvironmentInstance) delete persisted.instanceName;
 
-    if (hasLegacySecrets || (hasEnvironmentAllowlist && Object.prototype.hasOwnProperty.call(stored, 'allowedNumbers'))) {
+    if (hasLegacySecrets
+      || (hasEnvironmentAllowlist && Object.prototype.hasOwnProperty.call(stored, 'allowedNumbers'))
+      || (hasEnvironmentInstance && Object.prototype.hasOwnProperty.call(stored, 'instanceName'))) {
       try {
         await fs.writeFile(SETTINGS_FILE, `${JSON.stringify(persisted, null, 2)}\n`, { mode: 0o600 });
       } catch (error) {
@@ -43,10 +54,12 @@ async function loadSettings() {
     return {
       ...emptySettings(),
       ...persisted,
+      instanceName: getInstanceName(persisted),
       allowedNumbers: resolveAllowedNumbers(persisted)
     };
   } catch {
     const initial = emptySettings();
+    initial.instanceName = getInstanceName(initial);
     initial.allowedNumbers = resolveAllowedNumbers(initial);
     return initial;
   }
@@ -62,9 +75,11 @@ async function saveSettings(nextSettings) {
   const persisted = { ...nextSettings };
   delete persisted.apiKey;
   if (hasAllowedNumbersEnv()) delete persisted.allowedNumbers;
+  if (hasInstanceNameEnv()) delete persisted.instanceName;
 
   const runtimeSettings = {
     ...nextSettings,
+    instanceName: getInstanceName(nextSettings),
     allowedNumbers: resolveAllowedNumbers(persisted)
   };
   settingsPromise = Promise.resolve(runtimeSettings);
@@ -125,7 +140,7 @@ function validateSettings(input, current) {
     throw new Error('يجب أن يبدأ عنوان Evolution API بـ http أو https، دون بيانات دخول في الرابط.');
   }
 
-  const instanceName = String(input.instanceName || '').trim();
+  const instanceName = getInstanceName(input);
   if (!/^[a-zA-Z0-9._-]{1,60}$/.test(instanceName)) {
     throw new Error('اسم الـ Instance يقبل الأحرف والأرقام والنقطة والشرطة فقط.');
   }
@@ -314,7 +329,8 @@ async function serveStatic(request, response, pathname) {
       'x-content-type-options': 'nosniff',
       'referrer-policy': 'no-referrer'
     });
-    response.end(file);
+    if (request.method === 'HEAD') response.end();
+    else response.end(file);
   } catch {
     response.writeHead(404);
     response.end('Not found');
@@ -324,7 +340,15 @@ async function serveStatic(request, response, pathname) {
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   try {
-    if (request.method === 'GET' && url.pathname === '/health') {
+    if (['GET', 'HEAD'].includes(request.method) && url.pathname === '/health') {
+      if (request.method === 'HEAD') {
+        response.writeHead(200, {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'no-store',
+          'x-content-type-options': 'nosniff'
+        });
+        return response.end();
+      }
       return jsonResponse(response, 200, { ok: true });
     }
 
@@ -339,6 +363,7 @@ const server = http.createServer(async (request, response) => {
       return jsonResponse(response, 200, {
         baseUrl: current.baseUrl,
         instanceName: current.instanceName,
+        instanceNameFromEnv: hasInstanceNameEnv(),
         allowedNumbers: current.allowedNumbers,
         allowedNumbersFromEnv: hasAllowedNumbersEnv(),
         publicUrl: process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || current.publicUrl,
@@ -414,7 +439,7 @@ const server = http.createServer(async (request, response) => {
       return await handleWebhook(request, response, webhookMatch[1]);
     }
 
-    if (request.method === 'GET') return await serveStatic(request, response, url.pathname);
+    if (['GET', 'HEAD'].includes(request.method)) return await serveStatic(request, response, url.pathname);
     return jsonResponse(response, 405, { error: 'Method not allowed' });
   } catch (error) {
     const status = error instanceof SyntaxError ? 400 : 400;

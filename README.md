@@ -28,9 +28,15 @@ npm test
 	- `PUBLIC_URL` = اختياري، إذا أردت عنوانًا مخصصًا بدل عنوان Render التلقائي.
 	- `EVOLUTION_API_KEY` = قيمة `AUTHENTICATION_API_KEY` نفسها المستخدمة في خدمة Evolution. يمكن استخدام `AUTHENTICATION_API_KEY` بدلًا منها.
 	- `ALLOWED_NUMBERS` = أرقام المرسلين المسموحين مفصولة بفواصل أو أسطر، مثل `966500000001,201000000002`.
+	- `INSTANCE_NAME` = اختياري؛ اسم الـInstance. الافتراضي `mezan_bot`.
 
 4. أضف قرصًا دائمًا للخدمة واجعل مسار الربط `/var/data`. يحفظ الملف عنوان Evolution واسم الـInstance ورمز webhook؛ القرص الدائم يمنع فقد هذه الإعدادات عند إعادة النشر أو إعادة التشغيل. القرص الدائم متاح حسب خطة Render وقد يترتب عليه تكلفة.
 5. انشر الخدمة وافتح `https://عنوان-الخدمة.onrender.com/settings`.
+
+للمراقبة الخارجية عبر UptimeRobot اختر طريقة **HEAD**:
+
+- خدمة البوت: `https://عنوان-خدمة-البوت.onrender.com/health`، وتعيد الحالة `200` دون جسم استجابة.
+- Evolution API: `https://عنوان-evolution-api.onrender.com/manager/`. جرى التحقق أن عنوان Evolution الحالي يقبل HEAD على `/manager/` ويعيد `200`.
 
 لا تضع `SETTINGS_TOKEN` أو مفتاح Evolution API في ملفات المشروع أو المستودع. أدخل رمز الإعداد في صفحة الربط عند الحفظ أو اختبار الاتصال؛ لا يُخزن في المتصفح.
 

@@ -192,7 +192,7 @@ h1 span { color: var(--forest); }
 .field input, .field textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 5px; outline: 0; background: rgba(255,255,255,.8); transition: border-color .18s ease, box-shadow .18s ease; }
 .field input { height: 44px; padding: 0 12px; }
 .field textarea { min-height: 105px; padding: 12px; resize: vertical; direction: ltr; text-align: left; font-family: "DM Mono", monospace; font-size: 13px; line-height: 1.8; }
-.field textarea:disabled { color: #64766d; border-style: dashed; background: rgba(232,239,231,.65); opacity: 1; }
+.field textarea:disabled, .field input:disabled { color: #64766d; border-style: dashed; background: rgba(232,239,231,.65); opacity: 1; }
 .env-value { min-height: 44px; padding: 11px 12px; display: flex; align-items: center; color: var(--forest); border: 1px dashed #b9cec1; border-radius: 5px; background: rgba(232,239,231,.65); font-size: 11px; }
 .field input:focus, .field textarea:focus { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(21,91,76,.08); }
 .field input::placeholder, .field textarea::placeholder { color: #abb6ae; font-size: 11px; }

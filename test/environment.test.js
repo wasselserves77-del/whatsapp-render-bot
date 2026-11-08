@@ -2,7 +2,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   getEvolutionApiKey,
+  getInstanceName,
   hasAllowedNumbersEnv,
+  hasInstanceNameEnv,
   parseAllowedNumbers,
   resolveAllowedNumbers
 } = require('../lib/environment');
@@ -27,4 +29,12 @@ test('environment allowlist overrides stored values, including an explicit empty
   assert.deepEqual(resolveAllowedNumbers(stored, { ALLOWED_NUMBERS: '' }), []);
   assert.deepEqual(resolveAllowedNumbers(stored, {}), ['966500000001']);
   assert.equal(hasAllowedNumbersEnv({ ALLOWED_NUMBERS: '' }), true);
+});
+
+test('instance name comes from the environment, stored setting, or mezan_bot default', () => {
+  assert.equal(getInstanceName({}, { INSTANCE_NAME: 'evolution_instance' }), 'evolution_instance');
+  assert.equal(getInstanceName({ instanceName: 'saved_instance' }, {}), 'saved_instance');
+  assert.equal(getInstanceName({}, {}), 'mezan_bot');
+  assert.equal(hasInstanceNameEnv({ INSTANCE_NAME: 'mezan_bot' }), true);
+  assert.equal(hasInstanceNameEnv({ INSTANCE_NAME: ' ' }), false);
 });
