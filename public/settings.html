@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f7f2">
+  <title>ربط واتساب | مِيزان</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/settings.js" defer></script>
+</head>
+<body>
+  <div class="page-frame">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="ميزان، الصفحة الرئيسية">
+        <span class="brand-mark" aria-hidden="true">م</span>
+        <span class="brand-name">مِيزان</span>
+      </a>
+      <nav class="main-nav" aria-label="التنقل الرئيسي">
+        <a class="nav-link" href="/">آلة الجمع</a>
+        <a class="nav-link is-active" href="/settings" aria-current="page">ربط واتساب</a>
+      </nav>
+      <a class="back-link" href="/">العودة للجمع <span aria-hidden="true">←</span></a>
+    </header>
+
+    <main class="settings-layout">
+      <section class="settings-main" aria-labelledby="settings-title">
+        <div class="eyebrow"><span class="eyebrow-line"></span> إعداد التكامل</div>
+        <h1 id="settings-title">واتساب، <span>على اتصال.</span></h1>
+        <p class="settings-intro">اربط Evolution API وحدد الأرقام المسموح لها بإرسال عمليات الجمع.</p>
+
+        <form id="settings-form" class="settings-form">
+          <div class="form-section-title"><span class="step-number">01</span><h2>بيانات Evolution API</h2></div>
+          <div class="field-grid">
+            <label class="field field-wide" for="base-url">
+              <span>عنوان Evolution API</span>
+              <input id="base-url" name="baseUrl" type="url" placeholder="https://evolution.example.com" autocomplete="url" required>
+            </label>
+            <label class="field" for="instance-name">
+              <span>اسم الـ Instance</span>
+              <input id="instance-name" name="instanceName" type="text" placeholder="my-whatsapp" autocomplete="off" required>
+            </label>
+            <label class="field" for="api-key">
+              <span>مفتاح API <small id="api-key-hint">لا يُعرض بعد الحفظ</small></span>
+              <input id="api-key" name="apiKey" type="password" placeholder="أدخل المفتاح أو اتركه كما هو" autocomplete="new-password">
+            </label>
+            <label class="field field-wide" for="public-url">
+              <span>الرابط العام لهذا الموقع</span>
+              <input id="public-url" name="publicUrl" type="url" placeholder="يُكتشف تلقائيًا على Render" autocomplete="url">
+              <small>يستخدمه Evolution لإرسال إشعارات الرسائل الواردة.</small>
+            </label>
+          </div>
+
+          <div class="form-section-title numbers-title"><span class="step-number">02</span><h2>الأرقام المسموح لها</h2></div>
+          <label class="field" for="allowed-numbers">
+            <span>رقم دولي واحد في كل سطر</span>
+            <textarea id="allowed-numbers" name="allowedNumbers" rows="4" placeholder="9665XXXXXXXX&#10;2010XXXXXXXX" spellcheck="false"></textarea>
+            <small>اكتب رمز الدولة دون الحاجة إلى علامة +. الأرقام غير المدرجة لن تتلقى ردًا.</small>
+          </label>
+
+          <label class="field admin-token-field" for="settings-token">
+            <span>رمز إدارة الإعدادات <small>لا يوجد حساب مستخدم</small></span>
+            <input id="settings-token" name="settingsToken" type="password" placeholder="يُطلب عند تشغيل الموقع على Render" autocomplete="off">
+            <small>في Render، خزّنه كمتغير SETTINGS_TOKEN. لا يُحفظ الرمز في المتصفح.</small>
+          </label>
+
+          <div class="settings-actions">
+            <button class="calculate-button save-button" type="submit">
+              <span>حفظ وربط webhook</span>
+              <span class="button-arrow" aria-hidden="true">←</span>
+            </button>
+            <button class="test-button" id="test-connection" type="button">اختبار الاتصال</button>
+          </div>
+          <div id="settings-message" class="settings-message" role="status" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <aside class="settings-aside">
+        <div class="connection-card">
+          <div class="connection-orbit" aria-hidden="true"><span>↔</span></div>
+          <span class="section-kicker">حالة الربط</span>
+          <h2 id="connection-state">غير متصل</h2>
+          <p id="connection-detail">أدخل بيانات Evolution API ثم احفظ الإعدادات.</p>
+          <div class="connection-divider"></div>
+          <div class="connection-item"><span class="status-indicator" id="api-indicator"></span><span>واجهة Evolution API</span><strong id="api-status">غير مهيأ</strong></div>
+          <div class="connection-item"><span class="status-indicator" id="webhook-indicator"></span><span>Webhook الرسائل</span><strong id="webhook-status">غير مهيأ</strong></div>
+        </div>
+        <div class="security-note">
+          <span class="security-mark" aria-hidden="true">!</span>
+          <div>
+            <strong>مفتاحك لا يصل للمتصفح</strong>
+            <p>يحفظه الخادم محليًا خارج ملفات الموقع. استخدم قرص Render دائمًا لتفادي فقد الإعدادات عند إعادة النشر.</p>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="site-footer">
+      <span>مِيزان <span class="footer-dot">·</span> ربط Evolution API</span>
+      <span>لا حسابات ولا قاعدة بيانات</span>
+    </footer>
+  </div>
+</body>
+</html>

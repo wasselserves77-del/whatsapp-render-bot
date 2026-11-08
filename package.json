@@ -1,0 +1,14 @@
+{
+  "name": "whatsapp-sum-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Exact decimal calculator with an Evolution API WhatsApp webhook",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

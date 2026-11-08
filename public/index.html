@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f7f2">
+  <title>مِيزان | جمع دقيق</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="page-frame">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="ميزان، الصفحة الرئيسية">
+        <span class="brand-mark" aria-hidden="true">م</span>
+        <span class="brand-name">مِيزان</span>
+      </a>
+      <nav class="main-nav" aria-label="التنقل الرئيسي">
+        <a class="nav-link is-active" href="/" aria-current="page">آلة الجمع</a>
+        <a class="nav-link" href="/settings">ربط واتساب</a>
+      </nav>
+      <span class="topbar-note"><span class="live-dot"></span> حساب دقيق</span>
+    </header>
+
+    <main class="calculator-layout">
+      <section class="calculator-column" aria-labelledby="page-title">
+        <div class="eyebrow"><span class="eyebrow-line"></span> حاسبة الأعداد</div>
+        <div class="title-row">
+          <div>
+            <h1 id="page-title">اجمعها <span>بدقة.</span></h1>
+            <p class="intro-copy">أدخل كل عدد في خانة مستقلة. الكسور تُحسب كما كُتبت، بلا تقريب عائم.</p>
+          </div>
+          <div class="precision-stamp" aria-label="حساب عشري دقيق">
+            <span class="stamp-symbol">0.1</span>
+            <span>دون تقريب</span>
+          </div>
+        </div>
+
+        <div class="entry-heading">
+          <span>الأعداد</span>
+          <span class="entry-count" id="entry-count">٠ خانات</span>
+        </div>
+        <div id="number-rows" class="number-rows" aria-label="خانات الأعداد"></div>
+        <button class="add-row-button" id="add-row" type="button">
+          <span class="plus-icon" aria-hidden="true">+</span>
+          <span>إضافة خانة</span>
+        </button>
+
+        <div class="form-message" id="form-message" role="alert" aria-live="polite"></div>
+        <button class="calculate-button" id="calculate" type="button">
+          <span>احسب المجموع</span>
+          <span class="button-arrow" aria-hidden="true">←</span>
+        </button>
+        <p class="microcopy">استخدم النقطة للكسور، مثل 12.75 أو ‎−0.4</p>
+      </section>
+
+      <aside class="result-column" aria-label="نتيجة الجمع وسجل العمليات">
+        <section class="result-panel" aria-labelledby="result-title">
+          <div class="panel-topline">
+            <span id="result-title">المجموع الحالي</span>
+            <span class="sum-mark" aria-hidden="true">∑</span>
+          </div>
+          <div id="result" class="result-value" aria-live="polite">—</div>
+          <div class="result-foot">
+            <span id="result-detail">أدخل الأعداد لبدء الحساب</span>
+            <span class="result-check" aria-hidden="true">=</span>
+          </div>
+          <div class="result-rule"><span></span><span></span><span></span></div>
+        </section>
+
+        <section class="history-section" aria-labelledby="history-title">
+          <div class="history-heading">
+            <div>
+              <span class="section-kicker">محلي على هذا الجهاز</span>
+              <h2 id="history-title">العمليات السابقة</h2>
+            </div>
+            <span class="history-total" id="history-total">٠</span>
+          </div>
+          <ol id="history-list" class="history-list"></ol>
+          <div class="empty-history" id="empty-history">
+            <span class="empty-mark" aria-hidden="true">∑</span>
+            <p>ستظهر نتائجك هنا بعد أول عملية.</p>
+          </div>
+          <button class="clear-button" id="clear-all" type="button">
+            <span class="trash-icon" aria-hidden="true">×</span>
+            <span>حذف كل العمليات السابقة</span>
+          </button>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="site-footer">
+      <span>مِيزان <span class="footer-dot">·</span> جمع دقيق بلا قاعدة بيانات</span>
+      <span>الأرقام تبقى في متصفحك</span>
+    </footer>
+  </div>
+</body>
+</html>
