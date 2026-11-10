@@ -35,13 +35,45 @@ test('accepts the requested oslo command and the earlier olso spelling', () => {
   assert.equal(handleSessionMessage(sessions, '966500000001', 'olso').total, '5');
 });
 
-test('supports separate rows and numbers in the initial message', () => {
+test('supports separate rows and standalone prices in the initial message', () => {
   const sessions = new Map();
   const result = handleSessionMessage(sessions, '966500000001', '1\n2.5، 3');
 
-  assert.equal(result.action, 'started-with-values');
+  assert.equal(result.action, 'started-with-prices');
   assert.deepEqual(sessions.get('966500000001').values, ['1', '2.5', '3']);
   assert.equal(handleSessionMessage(sessions, '966500000001', 'olso').total, '6.5');
+});
+
+test('stores clear prices, asks about a product-adjacent number, and skips it on request', () => {
+  const sessions = new Map();
+  handleSessionMessage(sessions, '966500000001', 'ابدأ');
+
+  const receipt = handleSessionMessage(sessions, '966500000001', '+966 55 705 6628\n23\n1 خبز');
+  assert.equal(receipt.action, 'confirmation-required');
+  assert.deepEqual(sessions.get('966500000001').values, ['23']);
+  assert.deepEqual(sessions.get('966500000001').pending, ['1']);
+  assert.match(receipt.reply, /هل أعتمد الرقم \*〔 1 〕\* كسعر/);
+
+  assert.equal(handleSessionMessage(sessions, '966500000001', 'تخطي').action, 'price-skipped');
+  assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '23');
+});
+
+test('requires a decision for an ambiguous number before summing', () => {
+  const sessions = new Map();
+  handleSessionMessage(sessions, '966500000001', '14\n1 خبز');
+
+  assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').action, 'confirmation-required');
+  assert.equal(handleSessionMessage(sessions, '966500000001', 'اعتمد').action, 'price-confirmed');
+  assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '15');
+});
+
+test('clearing a session also discards unresolved candidates', () => {
+  const sessions = new Map();
+  handleSessionMessage(sessions, '966500000001', '1 خبز');
+
+  handleSessionMessage(sessions, '966500000001', 'oslo_d');
+  assert.deepEqual(sessions.get('966500000001').values, []);
+  assert.deepEqual(sessions.get('966500000001').pending, []);
 });
 
 test('oslo_d clears only the requesting sender session', () => {
