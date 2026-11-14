@@ -27,6 +27,12 @@ test('asks about text before, around, or after a number on the same line', () =>
   assert.deepEqual(result.ambiguous, ['15', '24', '10']);
 });
 
+test('asks for confirmation when text touches a number without spaces', () => {
+  const result = extractPriceCandidates('خبز15\n15خبز\nكرتون24ماء');
+  assert.deepEqual(result.accepted, []);
+  assert.deepEqual(result.ambiguous, ['15', '15', '24']);
+});
+
 test('accepts a comma-separated numeric-only list and filters long identifiers', () => {
   const result = extractPriceCandidates('14.50, 6، 9.5, 123456789012345');
   assert.deepEqual(result.accepted, ['14.50', '6', '9.5']);
