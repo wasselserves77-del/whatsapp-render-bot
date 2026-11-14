@@ -2,7 +2,8 @@ const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const http = require('node:http');
 const path = require('node:path');
-const { handleSessionMessage } = require('./lib/bot-session');
+const { handleSessionMessage, SESSION_EXPIRY_MESSAGE } = require('./lib/bot-session');
+const { scheduleSessionExpiry } = require('./lib/session-expiry');
 const {
   getEvolutionApiKey,
   getInstanceName,
@@ -252,6 +253,27 @@ function pruneProcessedMessages() {
   }
 }
 
+function sendWhatsAppMessage(current, recipient, text) {
+  return evolutionRequest(current, `/message/sendText/${encodeURIComponent(current.instanceName)}`, {
+    method: 'POST',
+    body: JSON.stringify({ number: recipient, text })
+  });
+}
+
+function scheduleSenderSessionExpiry(sender) {
+  const session = senderSessions.get(sender);
+  if (!session || (!session.values.length && !session.pending.length)) return;
+
+  scheduleSessionExpiry(senderSessions, sender, async (expiredSender) => {
+    const current = await getSettings();
+    if (!current.allowedNumbers.includes(expiredSender)
+      || !current.baseUrl
+      || !current.instanceName
+      || !getEvolutionApiKey()) return;
+    await sendWhatsAppMessage(current, expiredSender, SESSION_EXPIRY_MESSAGE);
+  });
+}
+
 async function handleWebhook(request, response, token) {
   const current = await getSettings();
   if (!token || token !== current.webhookToken) return jsonResponse(response, 404, { ok: false });
@@ -280,6 +302,7 @@ async function handleWebhook(request, response, token) {
 
   processedMessages.set(messageId, Date.now());
   const result = handleSessionMessage(senderSessions, sender, extractText(data.message));
+  scheduleSenderSessionExpiry(sender);
   if (!result.reply) {
     return jsonResponse(response, 200, {
       ok: true,
@@ -289,13 +312,7 @@ async function handleWebhook(request, response, token) {
   }
 
   try {
-    await evolutionRequest(current, `/message/sendText/${encodeURIComponent(current.instanceName)}`, {
-      method: 'POST',
-      body: JSON.stringify({
-        number: sender,
-        text: result.reply
-      })
-    });
+    await sendWhatsAppMessage(current, sender, result.reply);
     return jsonResponse(response, 200, { ok: true, action: result.action, total: result.total });
   } catch (error) {
     console.error('WhatsApp reply failed:', error.message);

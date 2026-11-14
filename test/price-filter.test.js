@@ -40,7 +40,7 @@ test('filters a product receipt like the provided chat examples', () => {
   const result = extractPriceCandidates(receipt);
 
   assert.deepEqual(result.accepted, [
-    '14.50', '6', '9.5', '11.50', '12.50', '12', '13', '27', '20', '103', '23', '16', '14', '13'
+    '14.50', '6', '9.5', '11.50', '12.50', '12', '13', '27', '13'
   ]);
-  assert.deepEqual(result.ambiguous, ['1', '1', '2']);
+  assert.deepEqual(result.ambiguous, ['20', '103', '23', '1', '16', '1', '14', '2']);
 });

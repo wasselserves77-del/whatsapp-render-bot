@@ -50,21 +50,37 @@ test('stores clear prices, asks about a product-adjacent number, and skips it on
 
   const receipt = handleSessionMessage(sessions, '966500000001', '+966 55 705 6628\n23\n1 خبز');
   assert.equal(receipt.action, 'confirmation-required');
-  assert.deepEqual(sessions.get('966500000001').values, ['23']);
-  assert.deepEqual(sessions.get('966500000001').pending, ['1']);
-  assert.match(receipt.reply, /هل أعتمد الرقم \*〔 1 〕\* كسعر/);
+    assert.deepEqual(sessions.get('966500000001').values, []);
+    assert.deepEqual(sessions.get('966500000001').pending.map(({ value }) => value), ['23', '1']);
+    assert.match(receipt.reply, /هل أعتمد الرقم \*〔 23 〕\* كسعر/);
 
-  assert.equal(handleSessionMessage(sessions, '966500000001', 'تخطي').action, 'price-skipped');
-  assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '23');
+    const morePrices = handleSessionMessage(sessions, '966500000001', '12.5\n27');
+    assert.equal(morePrices.reply, null);
+    assert.deepEqual(sessions.get('966500000001').values, ['12.5', '27']);
+
+    const blockedSum = handleSessionMessage(sessions, '966500000001', 'oslo');
+    assert.equal(blockedSum.action, 'confirmation-required');
+    assert.match(blockedSum.reply, /لا يمكن إكمال الجمع/);
+    assert.doesNotMatch(blockedSum.reply, /أحتاج تأكيدك/);
+
+    const skipped = handleSessionMessage(sessions, '966500000001', 'تخطي');
+    assert.equal(skipped.action, 'price-skipped');
+    assert.match(skipped.reply, /هل أعتمد الرقم \*〔 1 〕\* كسعر/);
+    assert.equal(handleSessionMessage(sessions, '966500000001', '14').reply, null);
+    assert.equal(handleSessionMessage(sessions, '966500000001', 'اعتمد').action, 'price-confirmed');
+    assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '54.5');
 });
 
 test('requires a decision for an ambiguous number before summing', () => {
   const sessions = new Map();
-  handleSessionMessage(sessions, '966500000001', '14\n1 خبز');
+  handleSessionMessage(sessions, '966500000001', '14');
+  handleSessionMessage(sessions, '966500000001', '1 خبز');
 
-  assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').action, 'confirmation-required');
-  assert.equal(handleSessionMessage(sessions, '966500000001', 'اعتمد').action, 'price-confirmed');
-  assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '15');
+    const blockedSum = handleSessionMessage(sessions, '966500000001', 'oslo');
+    assert.equal(blockedSum.action, 'confirmation-required');
+    assert.match(blockedSum.reply, /اعتمد/);
+    assert.equal(handleSessionMessage(sessions, '966500000001', 'اعتمد').action, 'price-confirmed');
+    assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '15');
 });
 
 test('clearing a session also discards unresolved candidates', () => {
