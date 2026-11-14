@@ -83,6 +83,25 @@ test('requires a decision for an ambiguous number before summing', () => {
     assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '15');
 });
 
+  test('does not repeat a confirmation when text and more numbers arrive before a decision', () => {
+    const sessions = new Map();
+    const firstPrompt = handleSessionMessage(sessions, '966500000001', '1 خبز');
+    assert.equal(firstPrompt.action, 'confirmation-required');
+
+    assert.equal(handleSessionMessage(sessions, '966500000001', 'طلب جديد').reply, null);
+    assert.equal(handleSessionMessage(sessions, '966500000001', '2 كرتون').reply, null);
+    assert.deepEqual(sessions.get('966500000001').pending.map(({ value }) => value), ['1', '2']);
+
+    const blockedSum = handleSessionMessage(sessions, '966500000001', 'oslo');
+    assert.match(blockedSum.reply, /لا يمكن إكمال الجمع/);
+    assert.doesNotMatch(blockedSum.reply, /هل أعتمد الرقم/);
+
+    const firstDecision = handleSessionMessage(sessions, '966500000001', 'تخطي');
+    assert.match(firstDecision.reply, /هل أعتمد الرقم \*〔 2 〕\* كسعر/);
+    assert.equal(handleSessionMessage(sessions, '966500000001', 'اعتمد').action, 'price-confirmed');
+    assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '2');
+  });
+
 test('clearing a session also discards unresolved candidates', () => {
   const sessions = new Map();
   handleSessionMessage(sessions, '966500000001', '1 خبز');
