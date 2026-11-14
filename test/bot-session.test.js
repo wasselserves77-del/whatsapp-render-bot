@@ -50,13 +50,13 @@ test('stores clear prices, asks about a product-adjacent number, and skips it on
 
   const receipt = handleSessionMessage(sessions, '966500000001', '+966 55 705 6628\n23\n1 خبز');
   assert.equal(receipt.action, 'confirmation-required');
-    assert.deepEqual(sessions.get('966500000001').values, []);
-    assert.deepEqual(sessions.get('966500000001').pending.map(({ value }) => value), ['23', '1']);
-    assert.match(receipt.reply, /هل أعتمد الرقم \*〔 23 〕\* كسعر/);
+    assert.deepEqual(sessions.get('966500000001').values, ['23']);
+    assert.deepEqual(sessions.get('966500000001').pending.map(({ value }) => value), ['1']);
+    assert.match(receipt.reply, /هل أعتمد الرقم \*〔 1 〕\* كسعر/);
 
     const morePrices = handleSessionMessage(sessions, '966500000001', '12.5\n27');
     assert.equal(morePrices.reply, null);
-    assert.deepEqual(sessions.get('966500000001').values, ['12.5', '27']);
+    assert.deepEqual(sessions.get('966500000001').values, ['23', '12.5', '27']);
 
     const blockedSum = handleSessionMessage(sessions, '966500000001', 'oslo');
     assert.equal(blockedSum.action, 'confirmation-required');
@@ -65,10 +65,10 @@ test('stores clear prices, asks about a product-adjacent number, and skips it on
 
     const skipped = handleSessionMessage(sessions, '966500000001', 'تخطي');
     assert.equal(skipped.action, 'price-skipped');
-    assert.match(skipped.reply, /هل أعتمد الرقم \*〔 1 〕\* كسعر/);
+    assert.match(skipped.reply, /تم تخطي الرقم \*〔 1 〕\*/);
+    assert.doesNotMatch(skipped.reply, /هل أعتمد الرقم/);
     assert.equal(handleSessionMessage(sessions, '966500000001', '14').reply, null);
-    assert.equal(handleSessionMessage(sessions, '966500000001', 'اعتمد').action, 'price-confirmed');
-    assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '54.5');
+    assert.equal(handleSessionMessage(sessions, '966500000001', 'oslo').total, '76.5');
 });
 
 test('requires a decision for an ambiguous number before summing', () => {
