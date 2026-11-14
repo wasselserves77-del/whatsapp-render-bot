@@ -14,11 +14,17 @@ test('asks for confirmation for numbers embedded beside product text', () => {
   assert.deepEqual(result.ambiguous, ['1', '2']);
 });
 
-test('accepts explicit currency prices and asks about quantity-like numbers', () => {
+test('asks for confirmation for any number sharing its line with text', () => {
   const result = extractPriceCandidates('عدد 3 خبز\n16 ريال\n2 حبات');
-  assert.deepEqual(result.accepted, ['16']);
-  assert.deepEqual(result.ambiguous, ['3', '2']);
+  assert.deepEqual(result.accepted, []);
+  assert.deepEqual(result.ambiguous, ['3', '16', '2']);
   assert.deepEqual(result.ignored, []);
+});
+
+test('asks about text before, around, or after a number on the same line', () => {
+  const result = extractPriceCandidates('15 كرتون ماء\nكرتون 24 ماء\nطلب جديد 10');
+  assert.deepEqual(result.accepted, []);
+  assert.deepEqual(result.ambiguous, ['15', '24', '10']);
 });
 
 test('accepts a comma-separated numeric-only list and filters long identifiers', () => {
